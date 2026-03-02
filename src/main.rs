@@ -2,31 +2,42 @@ use anyhow::Result;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::{
-    backend::CrosstermBackend,
-    widgets::{Block, Borders, List, ListItem},
     Terminal,
+    backend::CrosstermBackend,
+    widgets::{Block, Borders, List, ListItem, ListState},
 };
 use std::io::stdout;
 
 mod config;
 
 fn main() -> Result<()> {
-    // Ladda config
+    // Load config
     let config = config::load()?;
 
-    // Sätt upp terminal
+    // Set up terminal
     enable_raw_mode()?;
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    // UI state
+    let mut selected: usize = 0;
+    let mut list_state = ListState::default();
+
+    // Ensure selected is valid for current list
+    if config.projects.is_empty() {
+        list_state.select(None);
+    } else {
+        list_state.select(Some(selected));
+    }
+
     // Event loop
     loop {
-        // Rita UI
+        // Draw UI
         terminal.draw(|frame| {
             let items: Vec<ListItem> = config
                 .projects
@@ -38,20 +49,40 @@ fn main() -> Result<()> {
                 .collect();
 
             let list = List::new(items)
-                .block(Block::default().title("Projects").borders(Borders::ALL));
+                .block(Block::default().title("Projects").borders(Borders::ALL))
+                .highlight_symbol(" > ");
 
-            frame.render_widget(list, frame.area());
+            let area = frame.area();
+            frame.render_stateful_widget(list, area, &mut list_state);
         })?;
 
-        // Vänta på tangent
+        // Handle input
         if let Event::Key(key) = event::read()? {
             if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
                 break;
             }
+
+            if config.projects.is_empty() {
+                list_state.select(None);
+                continue;
+            }
+
+            if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('j') {
+                let max = config.projects.len();
+                if selected < max - 1 {
+                    selected += 1;
+                    list_state.select(Some(selected));
+                }
+            } else if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('k') {
+                if selected > 0 {
+                    selected -= 1;
+                    list_state.select(Some(selected));
+                }
+            }
         }
     }
 
-    // Städa upp
+    // Clean up
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
     terminal.show_cursor()?;

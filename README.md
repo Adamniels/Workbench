@@ -13,6 +13,11 @@ Built in Rust to explore:
 - Process management
 - Clean architecture in CLI applications
 
+# What features I want to acomplish
+
+- Want to be able to run commands through this tui, that i through the config can customize to a specific project
+- I want to be able to add custom cmds for project through TUI?? Do I really? or do I just change the config to add commands
+
 ---
 
 # 🚀 Why WorkBench?
