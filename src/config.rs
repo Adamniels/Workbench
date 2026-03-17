@@ -17,7 +17,7 @@ pub struct Settings {
 }
 
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Project{
     pub name: String,
     pub path: String,
@@ -26,7 +26,7 @@ pub struct Project{
     pub actions: Vec<Action>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Action{
     pub key: String,
     pub name: String,
